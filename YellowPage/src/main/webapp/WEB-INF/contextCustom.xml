@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.8.xsd"
+	default-lazy-init="false">
+
+	<bean id="objectIdValidator" class="com.inzent.yellowpage.ObjectIdValidatorImpl" />
+
+	<bean class="com.inzent.imanager.openapi.user.UserPasswordBean">
+		<property name="passwordEncoder">
+			<bean class="org.springframework.security.crypto.password.Pbkdf2PasswordEncoder"/>
+		</property>
+	</bean>
+
+	<task:scheduler id="scheduler" pool-size="6" /> <!-- pool-size는 task 갯수에 맞추어야 함 -->
+	<task:scheduled-tasks scheduler="scheduler">
+		<task:scheduled ref="metaHistoryDeleteTask" method="run" cron="0 30 * * * ?" />
+		<task:scheduled ref="publishApproveTask" method="run" cron="0/2 * * * * ?" />
+		<task:scheduled ref="publishingTask" method="run" cron="1/2 * * * * ?" />
+
+		<task:scheduled ref="statsServerTask" method="run" cron="0/3 * * * * ?" />
+		<task:scheduled ref="statsSystemTask" method="run" cron="1/3 * * * * ?" />
+		<task:scheduled ref="statsUserTask" method="run" cron="2/3 * * * * ?" />
+		<!--
+		<task:scheduled ref="statsServerTask" method="run" cron="0 0/10 * * * ?" />
+		<task:scheduled ref="statsSystemTask" method="run" cron="0 3/10 * * * ?" />
+		<task:scheduled ref="statsUserTask" method="run" cron="0 6/10 * * * ?" />
+		-->
+	</task:scheduled-tasks>
+
+	<security:authentication-manager id="authenticationManager">
+		<security:authentication-provider ref="authenticationProvider" />
+	</security:authentication-manager>
+
+	<bean id="tokenRepository" class="com.inzent.imanager.openapi.auth.TokenRepository">
+		<property name="compressionCodec">
+			<bean class="io.jsonwebtoken.impl.compression.GzipCompressionCodec" />
+		</property>
+	</bean>
+	
+	<bean id="corsSource" class="org.springframework.web.cors.UrlBasedCorsConfigurationSource">
+        <property name="corsConfigurations">
+            <map>
+                <entry key="/**">
+                    <bean class="org.springframework.web.cors.CorsConfiguration">
+                        <property name="allowCredentials" value="true" />
+                        <property name="allowedHeaders" value="*" />
+                        <property name="allowedMethods" value="*" />
+                        <property name="allowedOrigins" value="http://localhost:1112" />
+                        <property name="exposedHeaders">
+                            <list>
+                                <value>X-iManager-Access</value>
+                                <value>X-iManager-Refresh</value>
+                            </list>
+                        </property>
+                        <property name="maxAge" value="86400" />
+                    </bean>
+                </entry>
+            </map>
+        </property>
+    </bean>  	
+
+	<security:http auto-config="false" entry-point-ref="accessDeniedHandler" security-context-repository-ref="tokenRepository">
+		<security:intercept-url pattern="/api/auth/token" access="permitAll()" />
+		<security:intercept-url pattern="/api/auth/validateToken" access="permitAll()" />
+		<security:intercept-url pattern="/api/entity/fieldMeta/group/search" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/entity/fieldMeta/**" access="hasRole('ROLE_RecordViewer')" />
+		<security:intercept-url pattern="/api/entity/interface/**" access="hasRole('ROLE_InterfaceViewer')" />
+		<security:intercept-url pattern="/api/entity/interfaceClass/search" access="isAuthenticated()"/>
+		<security:intercept-url pattern="/api/entity/interfaceClass/**" access="hasRole('ROLE_PropertyViewer')" />
+		<security:intercept-url pattern="/api/entity/mappingFunction/**" access="hasRole('ROLE_MappingFunctionViewer')" />
+		<security:intercept-url pattern="/api/entity/menu/**" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/entity/message/**" access="hasRole('ROLE_MessageViewer')" />
+		<security:intercept-url pattern="/api/entity/metaHistory/**" access="hasRole('ROLE_MetaHistoryViewer')" />
+		<security:intercept-url pattern="/api/entity/notice/**" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/entity/privilege/search" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/entity/privilege/**" access="hasRole('ROLE_PrivilegeViewer')" />
+		<security:intercept-url pattern="/api/entity/property/group" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/entity/property/**" access="hasRole('ROLE_PropertyViewer')" />
+		<security:intercept-url pattern="/api/entity/publishLog/migration/recv" access="permitAll()" />
+		<security:intercept-url pattern="/api/entity/publishLog/migration/send" access="hasRole('ROLE_MigrationEditor')" />
+		<security:intercept-url pattern="/api/entity/publishLog/**" access="hasRole('ROLE_PublishLogViewer')" />
+		<security:intercept-url pattern="/api/entity/qna/**" access="hasRole('ROLE_QnaViewer')" />
+		<security:intercept-url pattern="/api/entity/record/search" access="hasAnyRole('ROLE_RecordViewer', 'ROLE_ServiceViewer', 'ROLE_InterfaceViewer')" />
+		<security:intercept-url pattern="/api/entity/record/**" access="hasRole('ROLE_RecordViewer')" />
+		<security:intercept-url pattern="/api/entity/role/**" access="hasRole('ROLE_RoleViewer')" />
+		<security:intercept-url pattern="/api/entity/server/search" access="isAuthenticated()"/>
+		<security:intercept-url pattern="/api/entity/server/**" access="hasAnyRole('ROLE_ServerViewer', 'ROLE_InterfaceViewer')" />
+		<security:intercept-url pattern="/api/entity/serverInterface/search" access="hasRole('ROLE_SystemEditor')" />
+		<security:intercept-url pattern="/api/entity/service/search" access="hasAnyRole('ROLE_ServiceViewer', 'ROLE_InterfaceViewer')" />
+		<security:intercept-url pattern="/api/entity/service/**" access="hasRole('ROLE_ServiceViewer')" />
+		<security:intercept-url pattern="/api/entity/system/search" access="isAuthenticated()"/>
+		<security:intercept-url pattern="/api/entity/system/**" access="hasRole('ROLE_SystemViewer')" />
+		<security:intercept-url pattern="/api/entity/user/password" access="permitAll()" />
+		<security:intercept-url pattern="/api/entity/user/**" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/mapping/**" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/page/login" access="permitAll()" />
+		<security:intercept-url pattern="/api/page/logoFileName" access="permitAll()" />
+		<security:intercept-url pattern="/api/page/password" access="permitAll()" />
+		<security:intercept-url pattern="/api/page/title" access="permitAll()" />
+		<security:intercept-url pattern="/api/page/messages" access="permitAll()" />
+		<security:intercept-url pattern="/api/page/isCombineLogin" access="permitAll()" />
+		<security:intercept-url pattern="/api/page/**" access="isAuthenticated()" />
+		<security:intercept-url pattern="/api/statistics/server" access="isAuthenticated()"/>
+		<security:intercept-url pattern="/api/statistics/**" access="hasRole('ROLE_StatisticsViewer')" />
+		<security:access-denied-handler ref="accessDeniedHandler" />
+		<security:csrf disabled="true" />
+		<security:cors configuration-source-ref="corsSource" />
+	</security:http>
+</beans>

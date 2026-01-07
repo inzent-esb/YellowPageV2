@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.8.xsd"
+	default-lazy-init="false">
+
+	<mvc:resources mapping="/css/**" location="/css/" />
+	<mvc:resources mapping="/custom/**" location="/custom/" />
+	<mvc:resources mapping="/img/**" location="/img/" />
+	<mvc:resources mapping="/js/**" location="/js/" />
+	<mvc:resources mapping="/template/**" location="/template/" />
+	<mvc:resources mapping="/*.*" location="/" />
+
+	<bean id="multipartResolver" class="org.springframework.web.multipart.support.StandardServletMultipartResolver" />
+
+	<bean id="interfaceClassRepository" class="com.inzent.imanager.repository.MetaEntityRepository">
+		<constructor-arg value="com.inzent.yellowpage.model.InterfaceClass" />
+	</bean>
+
+	<bean id="interfaceClassService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="interfaceClassRepository" />
+	</bean>
+
+	<bean id="fieldMetaService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="fieldMetaRepository" />
+	</bean>
+
+	<bean id="menuBookmarkRepository" class="com.inzent.imanager.repository.MetaEntityRepository">
+		<constructor-arg value="com.inzent.imanager.repository.meta.MenuBookmark" />
+	</bean>
+
+	<bean id="menuBookmarkService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="menuBookmarkRepository" />
+	</bean>
+
+	<bean id="messageService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="messageRepository" />
+	</bean>
+
+	<bean id="metaHistoryService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="metaHistoryRepository" />
+	</bean>
+
+	<bean id="noticeRepository" class="com.inzent.imanager.repository.MetaEntityRepository">
+		<constructor-arg value="com.inzent.imanager.repository.meta.Notice" />
+	</bean>
+
+	<bean id="noticeService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="noticeRepository" />
+	</bean>
+
+	<bean id="publishLogService" class="com.inzent.imanager.service.LogEntityService">
+		<property name="entityRepository" ref="publishLogRepository" />
+	</bean>
+
+	<bean id="qnaService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="qnaRepository" />
+	</bean>
+
+	<bean id="serverService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="serverRepository" />
+	</bean>
+
+	<bean id="serverInterfaceRepository" class="com.inzent.imanager.repository.MetaEntityRepository">
+		<constructor-arg value="com.inzent.yellowpage.model.ServerInterface" />
+	</bean>
+
+	<bean id="serverInterfaceService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="serverInterfaceRepository" />
+	</bean>
+
+	<bean id="systemRepository" class="com.inzent.yellowpage.repository.TraceModelRepository">
+		<constructor-arg value="com.inzent.yellowpage.model.SystemMeta" />
+	</bean>
+
+	<bean id="systemService" class="com.inzent.imanager.service.MetaEntityService">
+		<property name="metaEntityRepository" ref="systemRepository" />
+	</bean>
+
+	<context:component-scan base-package="com.inzent.imanager">
+		<context:exclude-filter type="regex" expression="com.inzent.imanager.openapi.user.UserController" />
+		<context:exclude-filter type="regex" expression="com.inzent.imanager.openapi.user.UserService" />
+		<context:exclude-filter type="regex" expression="com.inzent.imanager.openapi.user.UserRepository" />
+	</context:component-scan>
+	
+	<context:component-scan base-package="com.inzent.yellowpage" />
+
+	<tx:annotation-driven />
+
+	<mvc:annotation-driven />
+
+	<security:global-method-security secured-annotations="enabled" pre-post-annotations="enabled" />
+
+</beans>
+
